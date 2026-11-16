@@ -1,6 +1,6 @@
 // Garage Society Secret Santa — one function, one blob.
 // GET  /api/santa                -> public state (names, who's drawn, budget, date). Never the matches.
-// POST /api/santa {action:...}   -> setup | claim | mine | release | reset
+// POST /api/santa {action:...}   -> setup | claim | mine | hint | check | release | reset
 import { getStore } from "@netlify/blobs";
 import { createHash, randomBytes } from "node:crypto";
 
@@ -17,6 +17,15 @@ const hash = (s) => createHash("sha256").update("gs-santa:" + s).digest("hex");
 const token = () => randomBytes(16).toString("hex");
 const clean = (s, max) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 
+function device(ua = "") {
+  if (/iPhone/i.test(ua)) return "iPhone";
+  if (/iPad/i.test(ua)) return "iPad";
+  if (/Android/i.test(ua)) return "Android";
+  if (/Macintosh|Mac OS X/i.test(ua)) return "Mac";
+  if (/Windows/i.test(ua)) return "Windows";
+  return "Other device";
+}
+
 function publicView(d) {
   if (!d) return { exists: false };
   const claimed = Object.keys(d.claims || {});
@@ -28,8 +37,32 @@ function publicView(d) {
     total: d.names.length,
     budget: d.budget || "",
     date: d.date || "",
+    organiser: d.organiser || "",
     full: claimed.length >= d.names.length,
   };
+}
+
+// What one person is allowed to see: who they got, that person's hint, and their own hint.
+function myView(d, name) {
+  const match = d.pairs[name];
+  const theirs = (d.hints || {})[match];
+  const mine = (d.hints || {})[name];
+  return {
+    ok: true,
+    name,
+    match,
+    matchHint: theirs ? theirs.text : "",
+    matchHintAt: theirs ? theirs.at : "",
+    myHint: mine ? mine.text : "",
+    token: d.claims[name].token,
+    ...publicView(d),
+  };
+}
+
+function findByToken(d, t) {
+  if (!d || !t) return null;
+  for (const [name, c] of Object.entries(d.claims || {})) if (c.token === t) return name;
+  return null;
 }
 
 function shuffle(a) {
@@ -116,8 +149,8 @@ export default async (req) => {
           return { response: json({ error: "A draw is already running. Enter its organiser PIN to replace it." }, 409) };
         }
         const draw = {
-          names, pairs, claims: {},
-          budget: clean(body.budget, 30), date: clean(body.date, 60),
+          names, pairs, claims: {}, hints: {},
+          budget: clean(body.budget, 30), date: clean(body.date, 60), organiser: clean(body.organiser, 40),
           pinHash: hash(pin), createdAt: new Date().toISOString(),
         };
         return { write: draw, response: json({ ok: true, ...publicView(draw) }) };
@@ -126,29 +159,40 @@ export default async (req) => {
 
     if (action === "claim") {
       const name = clean(body.name, 40);
+      const ua = device(req.headers.get("user-agent") || "");
       return mutate(async (d) => {
         if (!d) return { response: json({ error: "There's no draw yet." }, 404) };
         if (!d.names.includes(name)) return { response: json({ error: "That name isn't in the sack." }, 404) };
         const existing = d.claims[name];
         if (existing) {
-          if (body.token && existing.token === body.token) {
-            return { response: json({ ok: true, name, match: d.pairs[name], token: existing.token, ...publicView(d) }) };
-          }
-          return { response: json({ error: `${name} has already drawn.`, ...publicView(d) }, 409) };
+          if (body.token && existing.token === body.token) return { response: json(myView(d, name)) };
+          const who = d.organiser ? d.organiser : "the organiser";
+          return { response: json({ error: `${name} has already been drawn. If that wasn't you, message ${who} and they'll sort it out.`, ...publicView(d) }, 409) };
         }
-        const t = token();
-        const next = { ...d, claims: { ...d.claims, [name]: { token: t, at: new Date().toISOString() } } };
-        return { write: next, response: json({ ok: true, name, match: d.pairs[name], token: t, ...publicView(next) }) };
+        const next = { ...d, claims: { ...d.claims, [name]: { token: token(), at: new Date().toISOString(), device: ua } } };
+        return { write: next, response: json(myView(next, name)) };
       });
     }
 
     if (action === "mine") {
       const d = await store().get(KEY, { type: "json" });
-      const name = clean(body.name, 40);
-      if (!d || !d.claims[name] || d.claims[name].token !== body.token) {
-        return json({ error: "Couldn't find your draw on this device." }, 404);
-      }
-      return json({ ok: true, name, match: d.pairs[name], ...publicView(d) });
+      const name = findByToken(d, clean(body.token, 64));
+      if (!name) return json({ error: "That link doesn't match the current draw." }, 404);
+      return json(myView(d, name));
+    }
+
+    if (action === "hint") {
+      const t = clean(body.token, 64);
+      const text = clean(body.text, 140);
+      return mutate(async (d) => {
+        const name = findByToken(d, t);
+        if (!name) return { response: json({ error: "That link doesn't match the current draw." }, 404) };
+        const hints = { ...(d.hints || {}) };
+        if (text) hints[name] = { text, at: new Date().toISOString() };
+        else delete hints[name];
+        const next = { ...d, hints };
+        return { write: next, response: json(myView(next, name)) };
+      });
     }
 
     if (action === "release" || action === "reset" || action === "check") {
@@ -157,7 +201,11 @@ export default async (req) => {
       if (action === "check") {
         const d = await s.get(KEY, { type: "json" });
         if (!d || d.pinHash !== hash(pin)) return json({ error: "Wrong PIN." }, 403);
-        return json({ ok: true, ...publicView(d) });
+        const people = d.names.map((n) => {
+          const c = d.claims[n];
+          return { name: n, drawn: !!c, at: c ? c.at : "", device: c ? c.device || "" : "", hint: !!(d.hints || {})[n] };
+        });
+        return json({ ok: true, people, ...publicView(d) });
       }
       if (action === "reset") {
         const d = await s.get(KEY, { type: "json" });
@@ -172,7 +220,9 @@ export default async (req) => {
         if (d.pinHash !== hash(pin)) return { response: json({ error: "Wrong PIN." }, 403) };
         const claims = { ...d.claims };
         delete claims[name];
-        const next = { ...d, claims };
+        const hints = { ...(d.hints || {}) };
+        delete hints[name]; // a wrong tap may have left a hint in their name
+        const next = { ...d, claims, hints };
         return { write: next, response: json({ ok: true, ...publicView(next) }) };
       });
     }
