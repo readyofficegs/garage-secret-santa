@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garage Society Secret Santa</title>
+<meta name="description" content="Pull a name from Santa's sack. Garage Society Secret Santa.">
+<meta property="og:title" content="Garage Society Secret Santa">
+<meta property="og:description" content="Tap your name and find out who you're buying for.">
+<meta name="theme-color" content="#1B3A44">
+<link rel="icon" href="assets/garage-g.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Intro Rust";src:url("fonts/IntroRust.otf") format("opentype");font-weight:400 900;font-display:swap}
+:root{
+  --yellow:#FFC700;--yellow-deep:#F2BA00;--yellow-soft:#FFF8DB;
+  --red:#FA4261;--red-deep:#D9304E;
+  --night:#1B3A44;--night-2:#2D6373;--ink:#1F2A30;--grey:#3E4E56;--grey-60:#7B868C;
+  --cream:#F6F2EA;--cream-soft:#FBF8F2;--paper:#fff;
+  --display:"Intro Rust","Outfit","Helvetica Neue",system-ui,sans-serif;
+  --body:"Outfit","Helvetica Neue",system-ui,sans-serif;
+  --ease:cubic-bezier(0.22,1,0.36,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--night);color:var(--cream);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{overflow-x:hidden}
+button,input,textarea{font:inherit;color:inherit}
+
+#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.glow{position:fixed;inset:auto -20% -40% -20%;height:70vh;background:radial-gradient(closest-side,rgba(45,99,115,.9),transparent);z-index:0;pointer-events:none}
+
+/* string lights */
+.lights{position:relative;z-index:2;height:56px;overflow:hidden}
+.lights svg{position:absolute;top:-6px;left:0;width:100%;height:60px}
+.bulb{animation:twinkle 2.4s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:1}50%{opacity:.35}}
+
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:4px 20px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+header img{height:46px;display:block}
+.tag{display:inline-flex;align-items:center;gap:6px;background:var(--red);color:#fff;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:6px 14px;border-radius:999px;transform:rotate(3deg)}
+
+.hero{text-align:center;margin:30px 0 8px}
+.eyebrow{font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--yellow)}
+h1{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:clamp(46px,11vw,92px);line-height:.95;margin:10px 0 0;color:var(--cream);letter-spacing:-.01em}
+h1 .y{color:var(--yellow)}
+.lead{font-size:19px;max-width:520px;margin:16px auto 0;color:rgba(246,242,234,.82)}
+
+/* sack */
+.sack-wrap{display:flex;justify-content:center;margin:26px 0 6px}
+.sack{width:210px;height:auto;filter:drop-shadow(0 18px 30px rgba(0,0,0,.35));transform-origin:50% 90%}
+.sack.wiggle{animation:wiggle .7s var(--ease)}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg)}50%{transform:rotate(5deg)}75%{transform:rotate(-2deg)}}
+.left{text-align:center;font-weight:700;font-size:18px}
+.left b{color:var(--yellow);font-size:22px}
+.meter{max-width:320px;height:10px;background:rgba(255,255,255,.12);border-radius:999px;margin:12px auto 0;overflow:hidden}
+.meter span{display:block;height:100%;background:var(--yellow);border-radius:999px;transition:width .6s var(--ease)}
+
+.panel{background:var(--cream);color:var(--grey);border-radius:24px;padding:28px;margin-top:28px;box-shadow:0 24px 60px rgba(0,0,0,.28);position:relative}
+.panel h2{font-family:var(--display);font-weight:900;text-transform:uppercase;color:var(--ink);font-size:28px;line-height:1.05;margin:0 0 6px}
+.panel .sub{margin:0 0 20px;color:var(--grey-60)}
+.panel::before{content:"";position:absolute;top:-10px;left:50%;width:120px;height:20px;margin-left:-60px;background:var(--red);border-radius:6px;transform:rotate(-1.5deg);opacity:.95}
+
+.names{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.nm{position:relative;border:0;cursor:pointer;background:var(--paper);border-radius:14px;padding:16px 14px 14px;text-align:left;font-weight:800;color:var(--ink);font-size:17px;line-height:1.2;box-shadow:0 2px 0 rgba(31,42,48,.08),inset 0 0 0 1.5px rgba(62,78,86,.12);transition:transform .14s var(--ease),box-shadow .2s var(--ease)}
+.nm::after{content:"";position:absolute;top:10px;right:12px;width:10px;height:10px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 3px var(--yellow-soft)}
+.nm small{display:block;font-weight:600;font-size:12px;color:var(--grey-60);margin-top:4px;letter-spacing:.02em}
+.nm:hover{transform:translateY(-2px) rotate(-.6deg);box-shadow:0 10px 22px rgba(31,42,48,.14),inset 0 0 0 1.5px var(--yellow)}
+.nm:active{transform:scale(.97)}
+.nm.gone{cursor:default;background:transparent;color:var(--grey-60);box-shadow:inset 0 0 0 1.5px rgba(62,78,86,.18);text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:rgba(250,66,97,.6)}
+.nm.gone::after{background:var(--red);box-shadow:0 0 0 3px rgba(250,66,97,.18)}
+.nm.gone:hover{transform:none}
+.nm.gone small{text-decoration:none;display:block}
+
+.btn{border:0;cursor:pointer;border-radius:999px;padding:13px 24px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .14s var(--ease),box-shadow .2s var(--ease),background .14s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-y{background:var(--yellow);color:var(--ink)}
+.btn-y:hover{background:var(--yellow-deep);box-shadow:0 14px 32px rgba(255,199,0,.35)}
+.btn-r{background:var(--red);color:#fff}
+.btn-r:hover{background:var(--red-deep)}
+.btn-ghost{background:transparent;color:var(--grey);box-shadow:inset 0 0 0 1.5px var(--grey)}
+.btn-ghost:hover{background:var(--grey);color:var(--cream)}
+.btn-ghost-light{background:transparent;color:var(--cream);box-shadow:inset 0 0 0 1.5px rgba(246,242,234,.5)}
+.btn-ghost-light:hover{background:rgba(246,242,234,.12)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn-big{font-size:18px;padding:16px 30px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.center{justify-content:center}
+
+label.f{display:block;font-weight:700;color:var(--ink);font-size:14px;margin:18px 0 6px}
+label.f span{font-weight:500;color:var(--grey-60)}
+input[type=text],input[type=password],textarea{width:100%;background:var(--paper);border:1.5px solid rgba(62,78,86,.18);border-radius:12px;padding:12px 14px;outline:none;color:var(--ink)}
+input:focus,textarea:focus{border-color:var(--grey);box-shadow:0 0 0 3px rgba(255,199,0,.35)}
+textarea{min-height:150px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.err{color:var(--red-deep);font-weight:700;margin-top:14px;min-height:1px}
+.note{font-size:14px;color:var(--grey-60);margin-top:10px}
+.linkbox{display:flex;gap:8px;margin-top:10px}
+.linkbox input{font-size:14px}
+
+/* mine banner */
+.mine{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:rgba(255,199,0,.12);border:1.5px solid rgba(255,199,0,.5);border-radius:18px;padding:14px 18px;margin-top:24px}
+.mine p{margin:0;font-weight:600}
+.mine b{color:var(--yellow)}
+
+/* full */
+.full{text-align:center;margin-top:10px}
+.full h2{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:clamp(36px,8vw,60px);line-height:1;color:var(--yellow);margin:8px 0 10px}
+.full p{color:rgba(246,242,234,.85);font-size:18px;margin:0 auto 22px;max-width:460px}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(15,28,34,.78);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;z-index:30}
+.overlay.on{display:flex}
+.modal{background:var(--cream);color:var(--grey);border-radius:28px;max-width:430px;width:100%;padding:32px 26px 26px;text-align:center;position:relative;overflow:hidden;animation:rise .4s var(--ease)}
+@keyframes rise{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:none}}
+.modal .eyebrow{color:var(--grey-60)}
+.modal h3{font-family:var(--display);font-weight:900;text-transform:uppercase;color:var(--ink);font-size:34px;line-height:1.05;margin:8px 0 8px}
+.modal p{margin:0 0 20px}
+
+.gift{width:200px;height:200px;margin:6px auto 30px;position:relative;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.gift .box{position:absolute;left:22px;right:22px;bottom:0;height:128px;background:var(--red);border-radius:14px}
+.gift .lid{position:absolute;left:10px;right:10px;top:46px;height:40px;background:var(--red-deep);border-radius:12px;transition:transform .55s var(--ease),opacity .4s .2s}
+.gift .rv{position:absolute;left:50%;top:46px;bottom:0;width:26px;margin-left:-13px;background:var(--yellow)}
+.gift .rh{position:absolute;left:22px;right:22px;top:116px;height:22px;background:var(--yellow)}
+.gift .bow{position:absolute;left:50%;top:8px;width:90px;height:44px;margin-left:-45px;transition:transform .55s var(--ease),opacity .4s .2s}
+.gift .bow::before,.gift .bow::after{content:"";position:absolute;bottom:0;width:44px;height:38px;border:9px solid var(--yellow);border-radius:50%/60% 60% 40% 40%}
+.gift .bow::before{left:0;transform:rotate(-18deg)}
+.gift .bow::after{right:0;transform:rotate(18deg)}
+.gift .tap{position:absolute;left:50%;bottom:-8px;transform:translate(-50%,100%);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--grey-60);white-space:nowrap}
+.gift.pulse{animation:pulse 1.8s var(--ease) infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.gift:hover .lid{transform:translateY(-5px) rotate(-2deg)}
+.gift.open .lid,.gift.open .bow{transform:translate(-30px,-90px) rotate(-26deg);opacity:0}
+.reveal{display:none}
+.reveal.on{display:block;animation:rise .45s var(--ease)}
+.target{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:clamp(40px,11vw,58px);line-height:1;color:var(--ink);margin:6px 0 16px;word-break:break-word}
+.target span{background:var(--yellow);padding:0 .14em;border-radius:6px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.meta{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:0 0 20px}
+.meta span{background:var(--paper);border:1px solid rgba(62,78,86,.18);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;animation:fall 1.7s var(--ease) forwards}
+@keyframes fall{to{transform:translateY(600px) rotate(560deg);opacity:0}}
+
+.admin-list{list-style:none;padding:0;margin:14px 0 0;display:flex;flex-direction:column;gap:6px}
+.admin-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--paper);border-radius:10px;padding:8px 8px 8px 14px;font-weight:600;color:var(--ink)}
+.admin-list .st{font-size:13px;color:var(--grey-60);font-weight:600}
+.admin-list .st.done{color:#2f8f22}
+.mini{border:0;background:var(--cream);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;color:var(--grey)}
+.mini:hover{background:var(--grey);color:var(--cream)}
+
+footer{position:relative;z-index:1;text-align:center;padding:20px 20px 36px;font-size:13px;color:rgba(246,242,234,.55)}
+footer button{background:none;border:0;color:rgba(246,242,234,.75);text-decoration:underline;cursor:pointer;font-size:13px;padding:0}
+.loading{text-align:center;padding:60px 0;color:rgba(246,242,234,.7);font-weight:600}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);background:var(--ink);color:var(--cream);padding:12px 18px;border-radius:999px;font-weight:600;font-size:14px;opacity:0;transition:all .3s var(--ease);z-index:40;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.hidden{display:none !important}
+@media (max-width:560px){
+  .panel{padding:22px 18px}
+  .two{grid-template-columns:1fr}
+  header img{height:38px}
+  .sack{width:170px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+<canvas id="snow" aria-hidden="true"></canvas>
+<div class="glow" aria-hidden="true"></div>
+
+<div class="lights" aria-hidden="true"><svg id="lights" preserveAspectRatio="none"></svg></div>
+
+<div class="wrap">
+  <header>
+    <img src="assets/garage-logo-light.png" alt="Garage Society">
+    <span class="tag">Ho ho ho</span>
+  </header>
+
+  <div class="hero">
+    <div class="eyebrow">The Garage Society gift exchange</div>
+    <h1>Secret <span class="y">Santa</span></h1>
+    <p class="lead" id="lead">Tap your name, open your present, find out who you're buying for. Shh.</p>
+  </div>
+
+  <div class="sack-wrap" id="sackWrap">
+    <svg class="sack" id="sack" viewBox="0 0 220 230" aria-hidden="true">
+      <ellipse cx="110" cy="218" rx="80" ry="9" fill="rgba(0,0,0,.25)"/>
+      <path d="M58 70 C30 110 22 170 40 196 C58 220 162 220 180 196 C198 170 190 110 162 70 Z" fill="#C8102E"/>
+      <path d="M58 70 C30 110 22 170 40 196 C50 210 80 216 110 216 C88 200 70 160 78 70 Z" fill="#A80D27" opacity=".55"/>
+      <path d="M70 72 C90 80 130 80 150 72 L156 58 C130 66 90 66 64 58 Z" fill="#8E0B21"/>
+      <path d="M64 58 C78 40 92 22 110 22 C128 22 142 40 156 58 C130 66 90 66 64 58 Z" fill="#C8102E"/>
+      <rect x="62" y="62" width="96" height="14" rx="7" fill="#FFC700"/>
+      <circle cx="110" cy="69" r="11" fill="#F2BA00"/>
+      <path d="M105 80 C100 92 96 100 92 108 M115 80 C120 92 124 100 128 108" stroke="#FFC700" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <g id="sackG"><image href="assets/garage-g.png" x="80" y="118" width="60" height="60"/></g>
+      <text id="sackNum" x="110" y="160" text-anchor="middle" font-family="Intro Rust, Outfit, sans-serif" font-weight="900" font-size="46" fill="#FFF8DB" class="hidden"></text>
+      <g fill="#fff" opacity=".9">
+        <circle cx="44" cy="40" r="3"/><circle cx="180" cy="30" r="2.5"/><circle cx="196" cy="88" r="2"/><circle cx="24" cy="100" r="2"/>
+      </g>
+    </svg>
+  </div>
+  <div id="counter" class="hidden">
+    <div class="left" id="leftText"></div>
+    <div class="meter"><span id="meter" style="width:0"></span></div>
+  </div>
+
+  <div id="view"><div class="loading">Checking with the elves…</div></div>
+</div>
+
+<footer>
+  Garage Society · Central · Causeway Bay · Wan Chai · Sheung Wan<br>
+  <button type="button" id="orgBtn">Organiser</button>
+</footer>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var API="/api/santa";
+  var $=function(id){return document.getElementById(id)};
+  var state=null, busy=false;
+  var ls={get:function(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del:function(k){try{localStorage.removeItem(k)}catch(e){}}};
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
+  function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove("on")},2600)}
+  function api(body){
+    var opt=body?{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}:{cache:"no-store"};
+    return fetch(API,opt).then(function(r){return r.json().catch(function(){return {error:"Unexpected reply"}}).then(function(j){j._status=r.status;return j})})
+      .catch(function(){return {error:"Can't reach the North Pole. Check your connection and try again.",_status:0}});
+  }
+  function myClaim(){var c=ls.get("gs-santa-claim");return (c&&state&&state.exists&&state.names.indexOf(c.name)>-1)?c:null}
+
+  /* ---------- lights ---------- */
+  function drawLights(){
+    var svg=$("lights"),w=window.innerWidth,n=Math.max(8,Math.round(w/70)),cols=["#FFC700","#FA4261","#FFF8DB","#4CB838"],h="";
+    var path="M0 8";for(var i=0;i<=n;i++){var x=i*w/n;path+=" Q"+(x-w/n/2)+" 34 "+x+" 8"}
+    h+='<path d="'+path+'" stroke="#0f2228" stroke-width="2.5" fill="none"/>';
+    for(var j=0;j<n;j++){var bx=(j+.5)*w/n,c=cols[j%cols.length];
+      h+='<g><rect x="'+(bx-4)+'" y="19" width="8" height="7" rx="2" fill="#0f2228"/><ellipse class="bulb" style="animation-delay:'+(j*0.37%2.4).toFixed(2)+'s" cx="'+bx+'" cy="36" rx="7" ry="11" fill="'+c+'"/><ellipse cx="'+bx+'" cy="36" rx="14" ry="18" fill="'+c+'" opacity=".18"/></g>'}
+    svg.setAttribute("viewBox","0 0 "+w+" 60");svg.innerHTML=h;
+  }
+  drawLights();window.addEventListener("resize",drawLights);
+
+  /* ---------- snow ---------- */
+  (function(){
+    var c=$("snow"),x=c.getContext("2d"),flakes=[],W,H,dpr=Math.min(2,window.devicePixelRatio||1);
+    if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    function size(){W=c.width=innerWidth*dpr;H=c.height=innerHeight*dpr;c.style.width=innerWidth+"px";c.style.height=innerHeight+"px"}
+    size();addEventListener("resize",size);
+    var N=Math.min(140,Math.round(innerWidth/9));
+    for(var i=0;i<N;i++)flakes.push({x:Math.random()*W,y:Math.random()*H,r:(Math.random()*2.4+.8)*dpr,s:(Math.random()*.6+.3)*dpr,d:Math.random()*Math.PI*2});
+    (function tick(){
+      x.clearRect(0,0,W,H);x.fillStyle="rgba(255,255,255,.85)";x.beginPath();
+      for(var i=0;i<flakes.length;i++){var f=flakes[i];f.y+=f.s;f.d+=.01;f.x+=Math.sin(f.d)*.4*dpr;
+        if(f.y>H+5){f.y=-5;f.x=Math.random()*W}x.moveTo(f.x,f.y);x.arc(f.x,f.y,f.r,0,Math.PI*2)}
+      x.fill();requestAnimationFrame(tick);
+    })();
+  })();
+
+  /* ---------- sack + counter ---------- */
+  function updateCounter(){
+    var s=state;
+    if(!s||!s.exists){$("counter").classList.add("hidden");$("sackNum").classList.add("hidden");$("sackG").classList.remove("hidden");return}
+    $("counter").classList.remove("hidden");
+    var drawn=s.total-s.remaining;
+    $("meter").style.width=(drawn/s.total*100)+"%";
+    if(s.full){$("leftText").innerHTML="All <b>"+s.total+"</b> names drawn";}
+    else $("leftText").innerHTML="<b>"+s.remaining+"</b> of "+s.total+" names still in the sack";
+    $("sackG").classList.toggle("hidden",!s.full);
+    $("sackNum").classList.toggle("hidden",s.full);
+    $("sackNum").textContent=s.remaining;
+  }
+  function wiggle(){var k=$("sack");k.classList.remove("wiggle");void k.offsetWidth;k.classList.add("wiggle")}
+
+  /* ---------- views ---------- */
+  function render(){
+    updateCounter();
+    var v=$("view"),s=state;
+    if(!s){v.innerHTML='<div class="loading">Checking with the elves…</div>';return}
+    if(s.error&&!s.exists&&s._status!==200){v.innerHTML='<div class="panel"><h2>Hmm</h2><p class="sub">'+esc(s.error)+'</p><button class="btn btn-y" onclick="location.reload()">Try again</button></div>';return}
+    if(!s.exists){renderSetup();return}
+    var mine=myClaim();
+    var banner=mine?'<div class="mine"><p>You\'ve drawn as <b>'+esc(mine.name)+'</b>.</p><button class="btn btn-y" type="button" id="seeMine">See who you got</button></div>':"";
+    if(s.full){
+      $("lead").textContent="Every name has been pulled from the sack.";
+      v.innerHTML='<div class="full"><div class="eyebrow">That\'s everyone</div><h2>Santa\'s sack is full!</h2><p>All '+s.total+' Secret Santas have their names. Time to go shopping'+(s.budget?' (budget '+esc(s.budget)+')':'')+'.</p></div>'+banner;
+    } else {
+      $("lead").textContent=mine?"You're all set. Here's who's still to draw.":"Tap your name, open your present, find out who you're buying for. Shh.";
+      var grid=s.names.map(function(n){
+        var gone=s.claimed.indexOf(n)>-1;
+        return gone?'<button class="nm gone" type="button" disabled>'+esc(n)+'<small>Drawn</small></button>'
+                   :'<button class="nm" type="button" data-n="'+esc(n)+'">'+esc(n)+'<small>Tap if this is you</small></button>';
+      }).join("");
+      v.innerHTML=banner+'<div class="panel"><h2>'+(mine?"Still to draw":"Who are you?")+'</h2><p class="sub">'+(mine?"Nudge anyone who hasn't had their go yet.":"Pick your own name. Once you've drawn, nobody else can pick it.")+'</p><div class="names" id="names">'+grid+'</div></div>';
+      if(!mine) $("names").addEventListener("click",function(e){var b=e.target.closest("button[data-n]");if(b)confirmName(b.dataset.n)});
+    }
+    if(mine) $("seeMine").addEventListener("click",function(){showMine(mine)});
+  }
+
+  function renderSetup(){
+    $("lead").textContent="Load up Santa's sack. Paste everyone's names, set a PIN, then share this page's link with the team.";
+    var draft=ls.get("gs-santa-draft")||{names:["Rach Leung","Matthew Kwan","Cindy Chow","Elaine Tsung","James Bernardo","Nicole Lau","Michelle Lee","Cristal Li","Katherine Fung","Wong Gu Leung"].join("\n")};
+    $("view").innerHTML=
+      '<form class="panel" id="setupForm"><h2>Fill the sack</h2><p class="sub">Organiser only. Do this once, then send everyone the link.</p>'+
+      '<label class="f" for="sNames">Names <span>one per line, or commas</span></label><textarea id="sNames" placeholder="Natalie&#10;Matthew&#10;James&#10;…">'+esc(draft.names||"")+'</textarea>'+
+      '<div class="two"><div><label class="f" for="sBudget">Budget <span>optional</span></label><input id="sBudget" type="text" maxlength="30" placeholder="HK$200" value="'+esc(draft.budget||"")+'"></div>'+
+      '<div><label class="f" for="sDate">Swap day <span>optional</span></label><input id="sDate" type="text" maxlength="60" placeholder="Fri 19 Dec, Wan Chai" value="'+esc(draft.date||"")+'"></div></div>'+
+      '<label class="f" for="sEx">Keep apart <span>optional, two names per line, e.g. Kate &amp; James</span></label><textarea id="sEx" style="min-height:70px" placeholder="Kate & James">'+esc(draft.ex||"")+'</textarea>'+
+      '<label class="f" for="sPin">Organiser PIN <span>so only you can reset it later</span></label><input id="sPin" type="password" maxlength="40" autocomplete="new-password" placeholder="At least 4 characters">'+
+      '<div class="err" id="sErr"></div>'+
+      '<div class="row" style="margin-top:18px"><button class="btn btn-r btn-big" type="submit" id="sGo">Fill the sack</button></div>'+
+      '<p class="note">The draw happens straight away. Nobody, including you, can see who got who.</p></form>';
+    var save=function(){ls.set("gs-santa-draft",{names:$("sNames").value,budget:$("sBudget").value,date:$("sDate").value,ex:$("sEx").value})};
+    ["sNames","sBudget","sDate","sEx"].forEach(function(id){$(id).addEventListener("input",save)});
+    $("setupForm").addEventListener("submit",function(e){
+      e.preventDefault();if(busy)return;
+      var names=$("sNames").value.split(/[\n,;]+/).map(function(n){return n.trim()}).filter(Boolean);
+      var ex=$("sEx").value.split(/\n+/).map(function(l){var p=l.split(/\s*(?:&|\+|\/|,|\band\b)\s*/i).map(function(x){return x.trim()}).filter(Boolean);return p.length===2?p:null}).filter(Boolean);
+      var bad=ex.filter(function(p){return names.indexOf(p[0])<0||names.indexOf(p[1])<0});
+      if(bad.length){$("sErr").textContent="Keep-apart names must match the list exactly: "+bad.map(function(p){return p.join(" & ")}).join(", ");return}
+      busy=true;$("sGo").disabled=true;$("sErr").textContent="";
+      var pin=$("sPin").value;
+      api({action:"setup",names:names,budget:$("sBudget").value,date:$("sDate").value,exclusions:ex,pin:pin}).then(function(r){
+        busy=false;$("sGo").disabled=false;
+        if(r.error){$("sErr").textContent=r.error;return}
+        ls.del("gs-santa-draft");ls.del("gs-santa-claim");
+        state=r;wiggle();render();showShare(true);
+      });
+    });
+  }
+
+  function shareUrl(){return location.origin+location.pathname}
+  function showShare(fresh){
+    openModal('<div class="eyebrow">'+(fresh?"The sack is full of names":"Share the link")+'</div><h3>'+(fresh?"Now send the link":"Invite the elves")+'</h3>'+
+      '<p>Send this to everyone. Each person taps their own name to get their match.'+(fresh?" Don't forget to draw your own name too.":"")+'</p>'+
+      '<div class="linkbox"><input type="text" readonly id="shareIn" value="'+esc(shareUrl())+'"><button class="btn btn-y" id="copyBtn" type="button">Copy</button></div>'+
+      '<div class="row center" style="margin-top:18px"><button class="btn btn-ghost" id="mClose" type="button">Done</button></div>');
+    $("copyBtn").onclick=function(){copy(shareUrl())};
+    $("shareIn").onclick=function(){this.select()};
+    $("mClose").onclick=closeModal;
+  }
+  function copy(t){
+    var done=function(){toast("Link copied")};
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,fb); else fb();
+    function fb(){var i=$("shareIn");if(i){i.select();try{document.execCommand("copy");done()}catch(e){toast("Select the link and copy it")}}}
+  }
+
+  function openModal(html){$("modal").innerHTML=html;$("overlay").classList.add("on")}
+  function closeModal(){$("overlay").classList.remove("on");$("modal").innerHTML=""}
+  $("overlay").addEventListener("click",function(e){if(e.target===this&&!busy&&!$("gift"))closeModal()});
+
+  function confirmName(n){
+    openModal('<div class="eyebrow">Just checking</div><h3>Are you '+esc(n)+'?</h3><p>You only get one go, and your name leaves the sack for good.</p>'+
+      '<div class="err" id="cErr"></div><div class="row center"><button class="btn btn-ghost" id="cNo" type="button">No, go back</button><button class="btn btn-r" id="cYes" type="button">Yes, that\'s me</button></div>');
+    $("cNo").onclick=closeModal;
+    $("cYes").onclick=function(){
+      if(busy)return;busy=true;this.disabled=true;this.textContent="Rummaging…";
+      api({action:"claim",name:n}).then(function(r){
+        busy=false;
+        if(r.error){
+          if(r.exists!==undefined&&r.names){state=r;render()}
+          $("cErr").textContent=r.error;$("cYes").disabled=false;$("cYes").textContent="Yes, that's me";
+          if(r._status===409){$("cYes").classList.add("hidden");$("cNo").textContent="OK"}
+          return;
+        }
+        ls.set("gs-santa-claim",{name:r.name,token:r.token});
+        state=r;wiggle();
+        gift(r.name,r.match,r.budget,r.date,function(){render()});
+      });
+    };
+  }
+
+  function showMine(c){
+    if(busy)return;busy=true;
+    api({action:"mine",name:c.name,token:c.token}).then(function(r){
+      busy=false;
+      if(r.error){toast(r.error);ls.del("gs-santa-claim");refresh();return}
+      gift(r.name,r.match,r.budget,r.date);
+    });
+  }
+
+  function gift(name,match,budget,date,after){
+    var meta="";if(budget)meta+='<span>Budget: '+esc(budget)+'</span>';if(date)meta+='<span>'+esc(date)+'</span>';
+    openModal('<div class="eyebrow">For '+esc(name)+' only</div><h3>Your present</h3>'+
+      '<div class="gift pulse" id="gift" role="button" tabindex="0" aria-label="Open your present"><div class="box"></div><div class="rv"></div><div class="rh"></div><div class="lid"></div><div class="bow"></div><span class="tap">Tap to open</span></div>'+
+      '<div class="reveal" id="rev"><div class="eyebrow">You\'re Secret Santa for</div><div class="target"><span>'+esc(match)+'</span></div>'+(meta?'<div class="meta">'+meta+'</div>':'')+
+      '<p>Keep it under your hat. You can come back to this page any time to check.</p><button class="btn btn-y" id="gDone" type="button">Got it</button></div>');
+    var g=$("gift");
+    var open=function(){
+      if(g.classList.contains("open"))return;g.classList.remove("pulse");g.classList.add("open");
+      setTimeout(function(){g.style.display="none";$("rev").classList.add("on");confetti($("modal"))},450);
+    };
+    g.addEventListener("click",open);g.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();open()}});
+    $("gDone").onclick=function(){closeModal();if(after)after();else render()};
+  }
+  function confetti(host){
+    var c=document.createElement("div");c.className="confetti";var cols=["#FFC700","#FA4261","#2D6373","#4CB838","#FFC700"];
+    for(var i=0;i<50;i++){var p=document.createElement("i");p.style.left=Math.random()*100+"%";p.style.background=cols[i%cols.length];p.style.animationDelay=(Math.random()*.35)+"s";p.style.animationDuration=(1.2+Math.random()*.9)+"s";c.appendChild(p)}
+    host.appendChild(c);setTimeout(function(){c.remove()},2800);
+  }
+
+  /* ---------- organiser ---------- */
+  $("orgBtn").addEventListener("click",function(){
+    if(!state||!state.exists){window.scrollTo({top:0,behavior:"smooth"});toast("Fill the sack below to start");return}
+    openModal('<div class="eyebrow">Organiser</div><h3>Elf HQ</h3><p>Enter the PIN you set when you filled the sack.</p>'+
+      '<input type="password" id="oPin" placeholder="PIN" autocomplete="current-password"><div class="err" id="oErr"></div>'+
+      '<div class="row center" style="margin-top:16px"><button class="btn btn-ghost" id="oNo" type="button">Cancel</button><button class="btn btn-y" id="oGo" type="button">Open</button></div>');
+    $("oNo").onclick=closeModal;
+    var go=function(){var pin=$("oPin").value;api({action:"check",pin:pin}).then(function(r){if(r.error){$("oErr").textContent=r.error;return}state=r;render();admin(pin)})};
+    $("oGo").onclick=go;$("oPin").addEventListener("keydown",function(e){if(e.key==="Enter")go()});
+    setTimeout(function(){$("oPin")&&$("oPin").focus()},50);
+  });
+  function admin(pin){
+    var s=state;
+    var list=s.names.map(function(n){var d=s.claimed.indexOf(n)>-1;
+      return '<li><span>'+esc(n)+'</span><span class="row" style="align-items:center;gap:8px"><span class="st'+(d?" done":"")+'">'+(d?"Drawn":"Waiting")+'</span>'+(d?'<button class="mini" data-rel="'+esc(n)+'" type="button">Put back</button>':'')+'</span></li>'}).join("");
+    openModal('<div class="eyebrow">Organiser</div><h3>Elf HQ</h3><p>'+(s.total-s.remaining)+' of '+s.total+' have drawn. You can\'t see who got who.</p>'+
+      '<div class="row center"><button class="btn btn-y" id="aShare" type="button">Copy share link</button></div>'+
+      '<ul class="admin-list" id="aList">'+list+'</ul>'+
+      '<p class="note" style="text-align:left">"Put back" re-opens a name if someone tapped the wrong one. Their match stays the same.</p>'+
+      '<div class="err" id="aErr"></div>'+
+      '<div class="row center" style="margin-top:16px"><button class="btn btn-ghost" id="aClose" type="button">Close</button><button class="btn btn-r" id="aReset" type="button">Empty the sack</button></div>');
+    $("aClose").onclick=closeModal;
+    $("aShare").onclick=function(){copy(shareUrl())};
+    $("aList").addEventListener("click",function(e){var b=e.target.closest("button[data-rel]");if(!b)return;
+      api({action:"release",name:b.dataset.rel,pin:pin}).then(function(r){if(r.error){$("aErr").textContent=r.error;return}state=r;render();admin(pin);toast(b.dataset.rel+" is back in the sack")})});
+    $("aReset").onclick=function(){
+      var b=this;if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Tap again to delete the draw";return}
+      api({action:"reset",pin:pin}).then(function(r){if(r.error){$("aErr").textContent=r.error;return}ls.del("gs-santa-claim");state=r;closeModal();render();toast("Sack emptied. Start a new draw.")});
+    };
+  }
+
+  /* ---------- load + refresh ---------- */
+  function refresh(){
+    if(busy||$("overlay").classList.contains("on"))return;
+    api().then(function(r){
+      var prev=state&&JSON.stringify([state.exists,state.claimed]);
+      state=r;
+      if(prev!==JSON.stringify([r.exists,r.claimed])) render(); else updateCounter();
+    });
+  }
+  api().then(function(r){state=r;render()});
+  setInterval(refresh,15000);
+  document.addEventListener("visibilitychange",function(){if(!document.hidden)refresh()});
+})();
+</script>
+</body>
+</html>
