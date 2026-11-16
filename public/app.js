@@ -70,8 +70,13 @@
     return '<div class="mine"><p>You\'ve drawn as <b>'+esc(me.name)+'</b>.'+(newHint?'<span class="new">New wish list hint</span>':'')+'</p>'+
       '<div class="acts"><button class="btn btn-y" type="button" id="seeMine">'+(newHint?"See their hint":"See who you got")+'</button></div></div>';
   }
+  function renderWhen(){
+    var w=$("when");if(!w)return;
+    if(state&&state.exists&&state.date){w.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>Gift exchange: '+esc(state.date)+(state.budget?' · Budget '+esc(state.budget):'');w.classList.remove("hidden")}
+    else w.classList.add("hidden");
+  }
   function render(){
-    updateCounter();
+    updateCounter();renderWhen();
     var v=$("view"),s=state;
     if(!s){v.innerHTML='<div class="loading">Checking with the elves…</div>';return}
     if(s.error&&!s.exists&&s._status!==200){v.innerHTML='<div class="panel"><h2>Hmm</h2><p class="sub">'+esc(s.error)+'</p><button class="btn btn-y" onclick="location.reload()">Try again</button></div>';return}
@@ -100,7 +105,8 @@
 
   function renderSetup(){
     $("lead").textContent="Load up Santa's sack. Check the names, set a PIN, then share the link with the team.";
-    var draft=ls.get("gs-santa-draft")||{names:["Rach Leung","Matthew Kwan","Cindy Chow","Elaine Tsung","James Bernardo","Nicole Lau","Michelle Lee","Cristal Li","Katherine Fung","Wong Gu Leung"].join("\n"),org:"James"};
+    var last=ls.get("gs-santa-last")||{};
+    var draft=ls.get("gs-santa-draft")||{names:last.names||["Rach Leung","Matthew Kwan","Cindy Chow","Elaine Tsung","James Bernardo","Nicole Lau","Michelle Lee","Cristal Li","Katherine Fung","Wong Gu Leung"].join("\n"),budget:last.budget||"",date:last.date||"Christmas dinner, Wed 23 Dec, The Regent TST",ex:last.ex||"",org:last.org||"James"};
     $("view").innerHTML=
       '<form class="panel" id="setupForm"><h2>Fill the sack</h2><p class="sub">Organiser only. Do this once, then send everyone the link.</p>'+
       '<label class="f" for="sNames">Names <span>one per line, or commas</span></label><textarea id="sNames" placeholder="Natalie&#10;Matthew&#10;James&#10;…">'+esc(draft.names||"")+'</textarea>'+
@@ -124,6 +130,7 @@
       api({action:"setup",names:names,budget:$("sBudget").value,date:$("sDate").value,organiser:$("sOrg").value,exclusions:ex,pin:$("sPin").value}).then(function(r){
         busy=false;$("sGo").disabled=false;
         if(r.error){$("sErr").textContent=r.error;return}
+        ls.set("gs-santa-last",{names:$("sNames").value,budget:$("sBudget").value,date:$("sDate").value,ex:$("sEx").value,org:$("sOrg").value});
         ls.del("gs-santa-draft");ls.del("gs-santa-claim");ls.del("gs-santa-hint-seen");me=null;
         state=r;wiggle();render();showShare(true);
       });
@@ -277,12 +284,27 @@
       return '<li><span class="who">'+esc(p.name)+'<small>'+sub+'</small></span>'+(p.drawn?'<button class="mini" data-rel="'+esc(p.name)+'" type="button">Put back</button>':'<span class="st">Waiting</span>')+'</li>'}).join("");
     openModal('<div class="eyebrow">Organiser</div><h3>Elf HQ</h3><p>'+(s.total-s.remaining)+' of '+s.total+' have drawn, '+hinted+' have added a hint. You can\'t see who got who.</p>'+
       '<div class="row center"><button class="btn btn-y" id="aShare" type="button">Copy share link</button></div>'+
+      '<div style="text-align:left;margin-top:18px"><div class="two"><div><label class="f" for="dBudget" style="margin-top:0">Budget</label><input id="dBudget" type="text" maxlength="30" placeholder="HK$200" value="'+esc(s.budget||"")+'"></div>'+
+      '<div><label class="f" for="dDate" style="margin-top:0">Swap day</label><input id="dDate" type="text" maxlength="60" placeholder="Fri 19 Dec, Wan Chai" value="'+esc(s.date||"")+'"></div></div>'+
+      '<label class="f" for="dOrg">Organiser</label><input id="dOrg" type="text" maxlength="40" value="'+esc(s.organiser||"")+'">'+
+      '<div class="row" style="margin-top:10px"><button class="btn btn-ghost" id="dSave" type="button">Save details</button></div>'+
+      '<p class="note" style="margin-top:6px">Changes show on everyone\'s reveal card straight away. No redraw needed.</p></div>'+
       '<ul class="admin-list" id="aList">'+list+'</ul>'+
       '<p class="note" style="text-align:left">Two names drawn at the same time on the same kind of phone can mean someone tapped the wrong one. "Put back" re-opens a name and clears its hint. Their match stays the same, so if someone saw a match they shouldn\'t have, empty the sack and redraw.</p>'+
       '<input type="text" readonly id="shareIn" value="'+esc(shareUrl())+'" style="position:absolute;left:-9999px">'+
       '<div class="err" id="aErr"></div>'+
       '<div class="row center" style="margin-top:16px"><button class="btn btn-ghost" id="aClose" type="button">Close</button><button class="btn btn-r" id="aReset" type="button">Empty the sack</button></div>');
     $("aClose").onclick=closeModal;
+    $("dSave").onclick=function(){
+      var b=this;b.disabled=true;b.textContent="Saving…";
+      api({action:"details",pin:pin,budget:$("dBudget").value,date:$("dDate").value,organiser:$("dOrg").value}).then(function(r){
+        b.disabled=false;b.textContent="Save details";
+        if(r.error){$("aErr").textContent=r.error;return}
+        state=Object.assign({},state,r);
+        ls.set("gs-santa-last",Object.assign(ls.get("gs-santa-last")||{},{budget:r.budget,date:r.date,org:r.organiser}));
+        render();toast("Details saved");
+      });
+    };
     $("aShare").onclick=function(){copy(shareUrl(),"shareIn","Link copied")};
     $("aList").addEventListener("click",function(e){var b=e.target.closest("button[data-rel]");if(!b)return;
       var n=b.dataset.rel;
@@ -311,7 +333,7 @@
     Promise.all([api(),loadMe()]).then(function(res){
       var prev=JSON.stringify([state&&state.exists,state&&state.claimed,me&&me.name,me&&me.matchHintAt]);
       state=res[0];me=res[1];
-      if(force||prev!==JSON.stringify([state.exists,state.claimed,me&&me.name,me&&me.matchHintAt])) render(); else updateCounter();
+      if(force||prev!==JSON.stringify([state.exists,state.claimed,me&&me.name,me&&me.matchHintAt])) render(); else {updateCounter();renderWhen()}
     });
   }
 

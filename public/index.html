@@ -186,6 +186,8 @@ footer button{background:none;border:0;color:rgba(246,242,234,.75);text-decorati
 a.btn{text-decoration:none}
 .admin-list li{text-align:left}
 .mini{white-space:nowrap}
+.when{display:inline-flex;align-items:center;gap:8px;margin-top:16px;background:rgba(255,199,0,.14);border:1.5px solid rgba(255,199,0,.55);color:var(--cream);font-weight:700;font-size:15px;padding:8px 16px;border-radius:999px}
+.when svg{color:var(--yellow);flex:none}
 .hidden{display:none !important}
 @media (max-width:560px){
   .panel{padding:22px 18px}
@@ -211,6 +213,7 @@ a.btn{text-decoration:none}
   <div class="hero">
     <div class="eyebrow">The Garage Society gift exchange</div>
     <h1>Secret <span class="y">Santa</span></h1>
+    <div class="when hidden" id="when"></div>
     <p class="lead" id="lead">Tap your name, open your present, find out who you're buying for. Shh.</p>
   </div>
 

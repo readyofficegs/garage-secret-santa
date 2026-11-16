@@ -195,6 +195,16 @@ export default async (req) => {
       });
     }
 
+    if (action === "details") {
+      const pin = clean(body.pin, 40);
+      return mutate(async (d) => {
+        if (!d) return { response: json({ error: "There's no draw yet." }, 404) };
+        if (d.pinHash !== hash(pin)) return { response: json({ error: "Wrong PIN." }, 403) };
+        const next = { ...d, budget: clean(body.budget, 30), date: clean(body.date, 60), organiser: clean(body.organiser, 40) };
+        return { write: next, response: json({ ok: true, ...publicView(next) }) };
+      });
+    }
+
     if (action === "release" || action === "reset" || action === "check") {
       const pin = clean(body.pin, 40);
       const s = store();
