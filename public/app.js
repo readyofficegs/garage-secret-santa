@@ -72,8 +72,14 @@
   }
   function renderWhen(){
     var w=$("when");if(!w)return;
-    if(state&&state.exists&&state.date){w.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>Gift exchange: '+esc(state.date)+(state.budget?' · Budget '+esc(state.budget):'');w.classList.remove("hidden")}
-    else w.classList.add("hidden");
+    if(state&&state.exists&&(state.date||state.budget)){
+      var icon='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>';
+      w.innerHTML='<span class="lbl">'+icon+'Gift exchange</span>'+
+        (state.date?(function(){var parts=state.date.split(/\s*,\s*/).filter(Boolean);
+          return '<span class="val">'+esc(parts[0])+'</span>'+(parts.length>1?'<span class="sub">'+parts.slice(1).map(function(x){return '<span>'+esc(x)+'</span>'}).join('<i>·</i>')+'</span>':'');})():'')+
+        (state.budget?'<span class="bud">Budget <b>'+esc(state.budget)+'</b></span>':'');
+      w.classList.remove("hidden");
+    } else w.classList.add("hidden");
   }
   function render(){
     updateCounter();renderWhen();
@@ -179,7 +185,7 @@
 
   /* ---------- after drawing: 1 open present, 2 your hint, 3 save your link ---------- */
   function steps(n){return '<div class="steps"><i class="'+(n>=1?"on":"")+'"></i><i class="'+(n>=2?"on":"")+'"></i><i class="'+(n>=3?"on":"")+'"></i></div>'}
-  function metaHTML(){var m="";if(state.budget)m+='<span>Budget: '+esc(state.budget)+'</span>';if(state.date)m+='<span>'+esc(state.date)+'</span>';return m?'<div class="meta">'+m+'</div>':""}
+  function metaHTML(){var m="";if(state.budget)m+='<span>Budget: '+esc(state.budget)+'</span>';if(state.date)m+='<span class="d">'+state.date.split(/\s*,\s*/).filter(Boolean).map(function(x){return '<b>'+esc(x)+'</b>'}).join(' · ')+'</span>';return m?'<div class="meta">'+m+'</div>':""}
   function theirHintHTML(){
     if(me.matchHint) return '<div class="hintcard"><span class="lbl">'+esc(me.match)+'\'s wish list hint</span><span class="txt">'+esc(me.matchHint)+'</span></div>';
     return '<div class="hintcard empty"><span class="lbl">Wish list hint</span><span class="txt">'+esc(me.match)+' hasn\'t added one yet. Check back later with your personal link.</span></div>';
